@@ -1,0 +1,1186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fire Dress Remote</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#17110e">
+<link rel="icon" href="icon-192.png">
+<style>
+  :root {
+    --bg: #17110e; --card: #221915; --line: #3a2a22; --text: #f3e6dc; --muted: #b59a88;
+    --accent: #ff7a1a; --accent-2: #ffb347; --ok: #6fcf7a; --bad: #ff5a4f;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 560px; margin: 0 auto; padding: 16px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+  h1 { font-size: 1.25rem; margin: 0; }
+  h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 10px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+  button {
+    font: inherit; color: var(--text); background: #2e221c; border: 1px solid var(--line);
+    border-radius: 10px; padding: 12px 10px; cursor: pointer; min-height: 44px;
+  }
+  button:active { transform: scale(.98); }
+  button:disabled { opacity: .4; cursor: default; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #1a0f08; font-weight: 600; }
+  button.on { background: linear-gradient(180deg, var(--accent-2), var(--accent)); color: #1a0f08; border-color: var(--accent); font-weight: 600; }
+  .pill { font-size: .8rem; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+  .pill.ok { color: var(--ok); border-color: var(--ok); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; }
+  .stat b { display: block; font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: .75rem; color: var(--muted); }
+  input[type=range] { width: 100%; accent-color: var(--accent); height: 32px; }
+  input[type=file] { width: 100%; color: var(--muted); margin-bottom: 10px; }
+  .bar { height: 10px; background: #2e221c; border-radius: 99px; overflow: hidden; margin: 10px 0 6px; }
+  .bar > div { height: 100%; width: 0; background: linear-gradient(90deg, #c2410c, var(--accent), var(--accent-2)); transition: width .2s; }
+  .muted { color: var(--muted); font-size: .85rem; }
+  #log { font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace; color: var(--muted); max-height: 140px; overflow: auto; white-space: pre-wrap; margin: 0; }
+  .warn { color: var(--bad); }
+  [hidden] { display: none !important; }
+  .fx { position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 8px 0 4px; margin-bottom: 4px; }
+  .fx .row button { font-size: 1.1rem; min-height: 64px; font-weight: 600; }
+  #flareBtn { background: linear-gradient(180deg, #ffb347, #ff6a00); color: #1a0f08; border-color: #ff7a1a; }
+  #burstBtn { background: linear-gradient(180deg, #ffe08a, #ffb020); color: #1a0f08; border-color: #ffb020; }
+  #fxHint { margin: 6px 2px 0; }
+  .meter { display: grid; grid-template-columns: 92px 1fr 64px; gap: 8px; align-items: center; font-size: .85rem; margin: 6px 0; }
+  .meter .track { position: relative; height: 12px; background: #2e221c; border-radius: 99px; overflow: hidden; }
+  .meter .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--accent); }
+  .meter .mark { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--text); opacity: .8; }
+  .meter b { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+  .events { display: flex; gap: 8px; margin: 8px 0; }
+  .events span { flex: 1; text-align: center; padding: 6px; border-radius: 10px; border: 1px solid var(--line); color: var(--muted); transition: background .4s, color .4s; }
+  .events span.hit { background: var(--accent); color: #1a0f08; transition: none; }
+  .tune h3 { font-size: .8rem; color: var(--muted); margin: 14px 0 4px; font-weight: 600; }
+  .tune label { display: grid; grid-template-columns: 1fr 70px; gap: 2px 8px; font-size: .85rem; margin: 6px 0; }
+  .tune label input[type=range] { grid-column: 1 / -1; height: 26px; }
+  .tune label b { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+  .tune select { font: inherit; color: var(--text); background: #2e221c; border: 1px solid var(--line); border-radius: 8px; padding: 6px; }
+  #leanDial { width: 96px; height: 96px; }
+  .beatlamp { width: 44px; height: 44px; border-radius: 50%; background: #2e221c; border: 1px solid var(--line); transition: background .25s; flex: none; }
+  .beatlamp.hit { background: var(--accent-2); transition: none; }
+  .beatlamp.big { background: #fff3c4; transition: none; }
+  .musicrow { display: flex; align-items: center; gap: 12px; margin: 10px 0; }
+  .musicrow .meter { flex: 1; margin: 0; }
+  #bpm { font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+  .sens { display: grid; gap: 4px; margin: 14px 0 4px; }
+  .sens label { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-weight: 600; }
+  .sens input { grid-column: 1 / -1; height: 34px; }
+  .sens b { font-variant-numeric: tabular-nums; }
+  details.adv { margin-top: 10px; }
+  .srcrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .pill.phone { color: var(--accent-2); border-color: var(--accent-2); }
+  .pill.imu { color: var(--ok); border-color: var(--ok); }
+  .warnbox { border: 1px solid var(--bad); color: var(--bad); border-radius: 10px; padding: 10px; margin: 10px 0; font-size: .85rem; }
+  #phoneStats { font-variant-numeric: tabular-nums; }
+  .switch { display: flex; align-items: center; gap: 8px; margin: 12px 0 6px; font-size: .9rem; }
+  .switch input { width: 22px; height: 22px; accent-color: var(--accent); }
+  #graphs { width: 100%; height: 330px; display: block; background: #1d1511; border: 1px solid var(--line); border-radius: 10px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .75rem; color: var(--muted); margin-top: 6px; }
+  .legend i { display: inline-block; width: 14px; height: 3px; vertical-align: middle; margin-right: 4px; }
+  details.adv summary { cursor: pointer; color: var(--muted); padding: 8px 0; }
+  #modes button small { display: block; font-size: .72rem; opacity: .75; font-weight: 400; }
+  .pack { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  .pack input { width: 90px; font: inherit; color: var(--text); background: #2e221c; border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+  .swatch { display: flex; align-items: center; gap: 8px; justify-content: center; }
+  .swatch i { width: 18px; height: 18px; border-radius: 50%; flex: none; border: 1px solid #0006; }
+  .wheel-wrap { display: grid; justify-items: center; gap: 10px; margin-top: 14px; }
+  #wheel { width: min(240px, 70vw); aspect-ratio: 1; touch-action: none; border-radius: 50%; cursor: crosshair; }
+  .targets { display: flex; gap: 8px; }
+  .targets button { display: flex; align-items: center; gap: 8px; padding: 8px 14px; }
+  .targets i { width: 18px; height: 18px; border-radius: 50%; border: 1px solid #0006; }
+  #preview { width: 100%; height: 14px; border-radius: 99px; border: 1px solid var(--line); }
+  input[type=color] { width: 100%; height: 44px; border: 1px solid var(--line); border-radius: 10px; background: #2e221c; padding: 3px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>🔥 Fire Dress</h1>
+    <span id="conn" class="pill">Not connected</span>
+  </header>
+
+  <div id="nobt" class="card warn" hidden>
+    This browser can't use Bluetooth. Use Chrome on Android or on the PC, and open this page over
+    https:// (or as a local file on the PC).
+  </div>
+
+  <div class="card">
+    <button id="connectBtn" class="primary" style="width:100%">Connect</button>
+    <p class="muted" style="margin:10px 0 0">First time: Android asks for a PIN. It's the BLE_PASSKEY in main_fire.cpp.</p>
+  </div>
+
+  <div id="controls" hidden>
+    <div class="fx">
+      <div class="row">
+        <button id="flareBtn">Flare</button>
+        <button id="burstBtn">Burst</button>
+      </div>
+      <p id="fxHint" class="muted"></p>
+    </div>
+
+    <div class="card">
+      <h2>Status</h2>
+      <div class="stats">
+        <div class="stat"><b id="vbat">–</b><span>battery V</span></div>
+        <div class="stat"><b id="pct">–</b><span>approx charge</span></div>
+        <div class="stat"><b id="power">–</b><span>power</span></div>
+        <div class="stat"><b id="draw">–</b><span>est. draw</span></div>
+        <div class="stat"><b id="hours">–</b><span>est. time left</span></div>
+        <div class="stat"><b id="packShow">–</b><span>pack mAh</span></div>
+      </div>
+      <div class="pack">
+        <span class="muted">Battery pack</span>
+        <input id="packMah" type="number" min="100" max="20000" step="100" inputmode="numeric">
+        <span class="muted">mAh</span>
+        <button id="packSet">Set</button>
+      </div>
+      <p class="muted" style="margin:8px 0 0">Estimates are rough: they come from what the LEDs show, at the current
+        brightness. Each mode's light output is measured by the dress at power-on.</p>
+      <p class="muted" style="margin:10px 0 0">Firmware <span id="fw">–</span> · IMU <span id="imu">–</span></p>
+    </div>
+
+    <div class="card">
+      <h2>Mode</h2>
+      <div id="modes" class="grid"></div>
+    </div>
+
+    <div class="card">
+      <h2>Brightness <span id="brightVal" style="float:right">–</span></h2>
+      <input id="bright" type="range" min="4" max="64" value="40">
+      <p id="brightEst" class="muted" style="margin:6px 0 0"></p>
+    </div>
+
+    <div class="card">
+      <h2>Motion</h2>
+      <div class="srcrow">
+        <span class="muted">Driving the fire</span>
+        <span id="srcPill" class="pill">No motion</span>
+      </div>
+      <button id="phoneMotionBtn" style="width:100%">Use this phone's motion</button>
+      <div id="sensorWarn" class="warnbox" hidden></div>
+      <p id="phoneStats" class="muted" style="margin:8px 0 0" hidden></p>
+      <p class="muted" style="margin:8px 0 0">Until the dress has its own motion sensor, the phone can stand in.
+        Wear or hold it upright with the screen facing out. Spin for a flare, stomp for a burst.</p>
+      <div class="sens">
+        <label>Phone sensitivity <b id="sv_ph">5</b>
+          <input id="sens_ph" type="range" min="1" max="10" step="0.5" value="5"></label>
+        <label>Dress sensor sensitivity <b id="sv_hw">5</b>
+          <input id="sens_hw" type="range" min="1" max="10" step="0.5" value="5"></label>
+        <p class="muted" style="margin:0">Higher = smaller movements move the fire, and gentler spins and stomps
+          trigger flares and bursts. 5 is the default.</p>
+      </div>
+      <label class="switch"><input id="graphToggle" type="checkbox"> Show graphs</label>
+      <div id="graphBox" hidden>
+        <canvas id="graphs"></canvas>
+        <div class="legend">
+          <span><i style="background:#ff7a1a"></i>what the dress sees</span>
+          <span><i style="background:#8a6f60"></i>phone raw</span>
+          <span><i style="background:#f3e6dc;height:1px;border-top:1px dashed #f3e6dc"></i>trigger level</span>
+          <span><i style="background:#ffb347"></i>F flare / B burst</span>
+        </div>
+      </div>
+      <div id="motionLive" hidden>
+        <p class="muted" style="margin:10px 0 0">Source: <span id="motionSrc">–</span></p>
+        <div class="meter"><span>Energy</span><div class="track"><div class="fill" id="mEnergy"></div></div><b id="vEnergy">–</b></div>
+        <div class="meter"><span>Movement</span><div class="track"><div class="fill" id="mMove"></div></div><b id="vMove">–</b></div>
+        <div class="meter"><span>Spin</span><div class="track"><div class="fill" id="mSpin"></div><div class="mark" id="kSpin"></div></div><b id="vSpin">–</b></div>
+        <div class="meter"><span>Jolt</span><div class="track"><div class="fill" id="mJolt"></div><div class="mark" id="kJolt"></div></div><b id="vJolt">–</b></div>
+        <div class="row" style="align-items:center">
+          <canvas id="leanDial" width="192" height="192" style="flex:none"></canvas>
+          <div class="events" style="flex-direction:column">
+            <span id="evFlare">Flare</span>
+            <span id="evBurst">Burst</span>
+          </div>
+        </div>
+      </div>
+      <details class="adv">
+        <summary>Advanced tuning</summary>
+        <div class="tune" id="tune"></div>
+      </details>
+      <div class="row" style="margin-top:10px">
+        <button id="recalBtn">Recalibrate upright</button>
+        <button id="tuneResetBtn">Reset tuning</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Music</h2>
+      <button id="musicBtn" style="width:100%">Listen to the music (phone mic)</button>
+      <p class="muted" style="margin:8px 0 0">Locks onto the beat of the song, not the volume, and learns how loud the room is, so it keeps working at full concert level. Use Music mode for the full effect. Keep this page open.</p>
+      <div id="musicWarn" class="warnbox" hidden></div>
+      <div id="musicLive" hidden>
+        <div class="musicrow">
+          <div class="beatlamp" id="beatLamp" title="beat"></div>
+          <div><b id="bpm">–</b> <span class="muted">BPM</span><br><span class="muted" id="roomDb">–</span></div>
+        </div>
+        <div class="meter"><span>Loudness</span><div class="track"><div class="fill" id="mLevel"></div></div><b id="vLevel">–</b></div>
+        <div class="meter"><span>Hits</span><div class="track"><div class="fill" id="mKick"></div><div class="mark" id="kKick"></div></div><b id="vKick">–</b></div>
+      </div>
+      <div class="sens">
+        <label>Music effect strength <b id="sv_mus">5</b>
+          <input id="sens_mus" type="range" min="1" max="10" step="0.5" value="5"></label>
+        <label>Beat sensitivity (before it locks on) <b id="sv_beat">5</b>
+          <input id="sens_beat" type="range" min="1" max="10" step="0.5" value="5"></label>
+      </div>
+      <label class="switch"><input id="musPulse" type="checkbox" checked> Every beat pops the brightness and sparks</label>
+      <label class="switch"><input id="musAccent" type="checkbox" checked> Big hits trigger a burst</label>
+      <label class="switch"><input id="musLevel" type="checkbox" checked> Loudness lifts the flames (Motion mode)</label>
+    </div>
+
+    <div class="card">
+      <h2>Flame colour</h2>
+      <div id="colours" class="grid"></div>
+      <div class="wheel-wrap">
+        <div class="targets">
+          <button id="pickBase" class="on"><i id="baseDot"></i>Base</button>
+          <button id="pickTip"><i id="tipDot"></i>Tip</button>
+        </div>
+        <canvas id="wheel" width="480" height="480"></canvas>
+        <input id="wheelBright" type="range" min="25" max="100" value="100" aria-label="Colour brightness">
+        <div id="preview"></div>
+        <p class="muted" style="margin:0">Pick Base or Tip, then touch the wheel. It sends when you let go.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Firmware update</h2>
+      <input id="fwFile" type="file" accept=".bin">
+      <button id="otaBtn" class="primary" style="width:100%" disabled>Update firmware</button>
+      <div class="bar"><div id="otaBar"></div></div>
+      <p id="otaText" class="muted" style="margin:0">Pick .pio/build/fire/firmware.bin</p>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <button id="sleepBtn">Sleep</button>
+        <button id="rebootBtn">Reboot dress</button>
+        <button id="disconnectBtn">Disconnect</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="muted" style="text-align:center;margin:4px 0 12px">Page version 14</p>
+
+  <div class="card">
+    <h2>Log</h2>
+    <pre id="log"></pre>
+  </div>
+</main>
+
+<script>
+const SVC    = '6e0fa1a0-3c1d-4f3e-9a51-f17ed2e55000';
+const CMD    = '6e0fa1a0-3c1d-4f3e-9a51-f17ed2e55001';
+const STATUS = '6e0fa1a0-3c1d-4f3e-9a51-f17ed2e55002';
+const OTA    = '6e0fa1a0-3c1d-4f3e-9a51-f17ed2e55003';
+const MODES  = '6e0fa1a0-3c1d-4f3e-9a51-f17ed2e55004';
+const IMU    = '6e0fa1a0-3c1d-4f3e-9a51-f17ed2e55005';
+const TUNE   = '6e0fa1a0-3c1d-4f3e-9a51-f17ed2e55006';
+const MOTION = '6e0fa1a0-3c1d-4f3e-9a51-f17ed2e55007';
+const AUDIO  = '6e0fa1a0-3c1d-4f3e-9a51-f17ed2e55008';
+const CHUNK  = 496;   // bytes per firmware write; the dress accepts up to 512
+
+const $ = id => document.getElementById(id);
+const enc = s => new TextEncoder().encode(s);
+const dec = v => new TextDecoder().decode(v);
+let device, cmdChr, statusChr, otaChr, imuChr, tuneChr, motionChr, audioChr, modeNames = [], updating = false;
+const DEFAULT_MODES = ['MOTION','DEMO','MUSIC','STEADY','CANDLE','INFERNO','EMBERS','LOWPOWER','RAINBOW','SPARKLE','STARS','WAVES','STORM','JELLYFISH','AURORA','FIREFLIES','HEARTBEAT','RAIN','PALETTE','RULER','SLEEP'];
+// [label, base, tip]; base null = the natural blackbody fire
+const COLOURS = [
+  ['Natural', null, null],
+  ['Lava',    'b00000', 'ff3c00'],
+  ['Blue gas','0030ff', '40c8ff'],
+  ['Green',   '00a020', '90ff40'],
+  ['Purple',  '6000c0', 'e070ff'],
+  ['Pink',    'c00060', 'ff80c8'],
+  ['Ice',     '2050ff', 'd0f0ff'],
+];
+
+function log(msg) {
+  const t = new Date().toLocaleTimeString();
+  $('log').textContent = `${t}  ${msg}\n` + $('log').textContent;
+}
+
+// GATT allows one operation at a time: run every read/write through one queue
+let gattChain = Promise.resolve();
+function gatt(op) {
+  const p = gattChain.then(op);
+  gattChain = p.catch(() => {});
+  return p;
+}
+const send = text => gatt(() => cmdChr.writeValueWithResponse(enc(text)));
+
+// ---------- connection ----------
+function connectExisting() { return connect(true); }
+async function connect(reuse = false) {
+  try {
+    if (!reuse || !device) {
+      device = await navigator.bluetooth.requestDevice({ filters: [{ services: [SVC] }] });
+      device.addEventListener('gattserverdisconnected', onDisconnected);
+    }
+    log(`Connecting to ${device.name || 'dress'}…`);
+    const server = await device.gatt.connect();
+    const svc = await server.getPrimaryService(SVC);
+    [cmdChr, statusChr, otaChr] = await Promise.all([CMD, STATUS, OTA].map(u => svc.getCharacteristic(u)));
+    const modesChr = await svc.getCharacteristic(MODES);
+    // first encrypted read: this is where Android asks for the PIN
+    const list = dec(await gatt(() => modesChr.readValue()));
+    modeNames = /^[A-Z,]+$/.test(list) ? list.split(',') : DEFAULT_MODES;
+    renderModes();
+    statusChr.addEventListener('characteristicvaluechanged', e => onStatus(dec(e.target.value)));
+    await gatt(() => statusChr.startNotifications());
+    otaChr.addEventListener('characteristicvaluechanged', e => onOtaMessage(dec(e.target.value)));
+    await gatt(() => otaChr.startNotifications());
+    onStatus(dec(await gatt(() => statusChr.readValue())));
+    try {
+      [imuChr, tuneChr, motionChr] = await Promise.all([IMU, TUNE, MOTION].map(u => svc.getCharacteristic(u)));
+      try { audioChr = await svc.getCharacteristic(AUDIO); } catch { audioChr = null; }
+      motionChr.addEventListener('characteristicvaluechanged', e => onMotion(dec(e.target.value)));
+      await gatt(() => motionChr.startNotifications());
+      await readTuning();
+    } catch (e) {
+      imuChr = tuneChr = motionChr = null;
+      log(`Motion channel missing (${e.message}). If the dress firmware is current, forget/unpair FireDress in the phone's Bluetooth settings and reconnect: the phone is remembering an older layout.`);
+    }
+    $('conn').textContent = 'Connected'; $('conn').classList.add('ok');
+    $('controls').hidden = false;
+    $('connectBtn').textContent = 'Reconnect';
+    log('Connected');
+  } catch (e) {
+    log(`Connect failed: ${e.message}`);
+    if (!connectRetried && device && /no longer|invalid|disconnected|unknown/i.test(e.message)) {
+      connectRetried = true;
+      log('Retrying once (the dress may have just updated its channel list)…');
+      try { device.gatt.disconnect(); } catch {}
+      setTimeout(() => connectExisting(), 1500);
+    }
+  }
+}
+
+function onDisconnected() {
+  if (streaming) togglePhoneMotion();
+  if (music.on) toggleMusic();
+  $('conn').textContent = 'Not connected'; $('conn').classList.remove('ok');
+  $('controls').hidden = true;
+  log(updating ? 'Disconnected (the dress reboots after an update)' : 'Disconnected');
+}
+
+// ---------- status ----------
+let current = {};
+function onStatus(text) {
+  try { current = JSON.parse(text); }
+  catch {
+    // a notification is cut off when the link uses small packets: read it whole
+    gatt(() => statusChr.readValue()).then(v => {
+      try { current = JSON.parse(dec(v)); renderStatus(); } catch {}
+    }).catch(() => {});
+    return;
+  }
+  renderStatus();
+}
+
+// Predicted hours for a mode at a brightness, from the dress's light profile
+function hoursFor(modeIndex, bright) {
+  if (!current.lit) return -1;
+  const b = current.lowb ? Math.min(bright, current.lowb) : bright;
+  const ma = current.lit[modeIndex] * current.chma * b / 255 + current.dark + current.mcu;
+  return current.left / ma;
+}
+const fmtH = h => h < 0 ? '–' : h >= 10 ? `${Math.round(h)} h` : `${h.toFixed(1)} h`;
+function renderEstimates(bright) {
+  document.querySelectorAll('#modes button').forEach(b => {
+    b.querySelector('small').textContent = `≈ ${fmtH(hoursFor(Number(b.dataset.mode) - 1, bright))}`;
+  });
+  const name = modeNames[current.mode - 1] || '';
+  $('brightEst').textContent = current.lit
+    ? `≈ ${fmtH(hoursFor(current.mode - 1, bright))} left in ${name.toLowerCase()} at brightness ${bright}` : '';
+}
+
+function renderStatus() {
+  if (current.mode === undefined) return;
+  $('vbat').textContent = current.vbat ? current.vbat.toFixed(2) : '–';
+  $('pct').textContent = current.pct !== undefined ? `${current.pct}%` : '–';
+  $('power').textContent = current.usb ? 'USB' : 'Battery';
+  $('draw').textContent = current.ma ? `${current.ma} mA` : '–';
+  $('hours').textContent = current.hrs !== undefined ? fmtH(current.hrs) : '–';
+  $('packShow').textContent = current.pack || '–';
+  if (current.pack && !$('packMah').matches(':focus')) $('packMah').value = current.pack;
+  $('fw').textContent = current.fw || '–';
+  $('imu').textContent = current.imu ? 'connected' : 'not found';
+  const slider = $('bright');
+  slider.min = current.min; slider.max = current.max;
+  if (!slider.matches(':active')) slider.value = current.bright;
+  $('brightVal').textContent = current.bright;
+  document.querySelectorAll('#modes button').forEach(b => {
+    const n = Number(b.dataset.mode);
+    b.classList.toggle('on', n === current.mode);
+
+  });
+  renderEstimates($('bright').matches(':active') ? Number($('bright').value) : current.bright);
+  renderHint();
+  document.querySelectorAll('#colours button').forEach(b => {
+    b.classList.toggle('on', b.dataset.colour === (current.color || 'natural'));
+  });
+  if (current.color && current.color !== 'natural' && !wheelBusy) {
+    [pick.base, pick.tip] = current.color.split(' ');
+    showPick();
+  }
+}
+
+function renderColours() {
+  const box = $('colours');
+  box.innerHTML = '';
+  COLOURS.forEach(([label, base, tip]) => {
+    const b = document.createElement('button');
+    b.className = 'swatch';
+    b.dataset.colour = base ? `${base} ${tip}` : 'natural';
+    const dot = document.createElement('i');
+    dot.style.background = base ? `linear-gradient(135deg, #${base}, #${tip})` : 'linear-gradient(135deg, #a01800, #ff9a20)';
+    b.append(dot, label);
+    b.onclick = () => send(base ? `color ${base} ${tip}` : 'color natural').catch(e => log(e.message));
+    box.appendChild(b);
+  });
+}
+// ---------- colour wheel ----------
+// Starts on fire colours: deep red-orange body, yellow-orange tip
+const pick = { base: 'ff3000', tip: 'ffa000', target: 'base' };
+let wheelBusy = false;
+
+function hsvToHex(h, s, v) {
+  const f = n => { const k = (n + h / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); };
+  return [f(5), f(3), f(1)].map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('');
+}
+function drawWheel() {
+  const c = $('wheel'), ctx = c.getContext('2d'), r = c.width / 2;
+  const img = ctx.createImageData(c.width, c.height);
+  for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x++) {
+    const dx = x - r, dy = y - r, d = Math.hypot(dx, dy) / r;
+    if (d > 1) continue;
+    const hue = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
+    const hex = hsvToHex(hue, d, 1), i = (y * c.width + x) * 4;
+    img.data[i] = parseInt(hex.slice(0, 2), 16); img.data[i + 1] = parseInt(hex.slice(2, 4), 16);
+    img.data[i + 2] = parseInt(hex.slice(4, 6), 16); img.data[i + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+}
+function showPick() {
+  $('baseDot').style.background = '#' + pick.base;
+  $('tipDot').style.background = '#' + pick.tip;
+  $('preview').style.background = `linear-gradient(90deg, #000, #${pick.base} 45%, #${pick.tip})`;
+  $('pickBase').classList.toggle('on', pick.target === 'base');
+  $('pickTip').classList.toggle('on', pick.target === 'tip');
+}
+function wheelAt(e) {
+  const rect = $('wheel').getBoundingClientRect();
+  const dx = e.clientX - rect.left - rect.width / 2, dy = e.clientY - rect.top - rect.height / 2;
+  const d = Math.min(1, Math.hypot(dx, dy) / (rect.width / 2));
+  const hue = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
+  pick[pick.target] = hsvToHex(hue, d, $('wheelBright').value / 100);
+  showPick();
+}
+const sendPick = () => send(`color ${pick.base} ${pick.tip}`).catch(e => log(e.message));
+$('wheel').addEventListener('pointerdown', e => { wheelBusy = true; $('wheel').setPointerCapture(e.pointerId); wheelAt(e); });
+$('wheel').addEventListener('pointermove', e => { if (wheelBusy) wheelAt(e); });
+$('wheel').addEventListener('pointerup', () => { wheelBusy = false; sendPick(); });
+$('wheelBright').addEventListener('change', () => {
+  // rescale the colour being edited to the new brightness, keeping its hue
+  const hex = pick[pick.target], rgb = [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16));
+  const m = Math.max(...rgb) || 1, k = $('wheelBright').value / 100 * 255 / m;
+  pick[pick.target] = rgb.map(x => Math.min(255, Math.round(x * k)).toString(16).padStart(2, '0')).join('');
+  showPick(); sendPick();
+});
+$('pickBase').onclick = () => { pick.target = 'base'; showPick(); };
+$('pickTip').onclick = () => { pick.target = 'tip'; showPick(); };
+drawWheel(); showPick();
+renderColours();
+
+function renderModes() {
+  const box = $('modes');
+  box.innerHTML = '';
+  modeNames.forEach((name, i) => {
+    const b = document.createElement('button');
+    b.textContent = `${i + 1} ${name[0]}${name.slice(1).toLowerCase()}`;
+    b.appendChild(document.createElement('small'));
+    b.dataset.mode = i + 1;
+    b.onclick = () => send(`mode ${i + 1}`).catch(e => log(e.message));
+    box.appendChild(b);
+  });
+}
+
+// ---------- controls ----------
+let brightTimer;
+$('bright').addEventListener('input', e => {
+  $('brightVal').textContent = e.target.value;
+  renderEstimates(Number(e.target.value));   // instant, before the dress even replies
+  clearTimeout(brightTimer);
+  brightTimer = setTimeout(() => send(`bright ${e.target.value}`).catch(err => log(err.message)), 120);
+});
+$('packSet').onclick = () => {
+  const v = parseInt($('packMah').value, 10);
+  if (v >= 100) send(`pack ${v}`).catch(e => log(e.message));
+};
+$('flareBtn').onclick = () => send('flare').catch(e => log(e.message));
+$('burstBtn').onclick = () => send('burst').catch(e => log(e.message));
+$('rebootBtn').onclick = () => send('reboot').catch(() => {});
+// Sleep: LEDs and Bluetooth off until the dress's button is pressed. Tap twice to confirm.
+let sleepArmed = null;
+$('sleepBtn').onclick = () => {
+  if (!sleepArmed) {
+    $('sleepBtn').textContent = 'Tap again to sleep';
+    sleepArmed = setTimeout(() => { sleepArmed = null; $('sleepBtn').textContent = 'Sleep'; }, 3000);
+    return;
+  }
+  clearTimeout(sleepArmed); sleepArmed = null; $('sleepBtn').textContent = 'Sleep';
+  log('Dress is going to sleep. Press its button to wake it.');
+  send('sleep').catch(() => {});
+};
+$('disconnectBtn').onclick = () => device && device.gatt.disconnect();
+// After a dress firmware update the dress tells the phone its channel list
+// changed, which can break the first connect: retry once by itself.
+let connectRetried = false;
+$('connectBtn').onclick = async () => {
+  connectRetried = false;
+  await connect();
+};
+$('fwFile').onchange = () => { $('otaBtn').disabled = !$('fwFile').files.length; };
+
+// ---------- what Flare and Burst do in each mode ----------
+const FX_HINTS = {
+  DEMO: ['hotter, taller flames', 'sparks shoot up from the hem'],
+  STEADY: ['hotter, taller flames', 'sparks shoot up from the hem'],
+  CANDLE: ['the candle flares up', 'sparks at the base'],
+  INFERNO: ['white-hot surge', 'sparks shoot up from the hem'],
+  EMBERS: ['embers flare into flame', 'sparks at the base'],
+  RAINBOW: ['spins faster with white glints', 'a white ripple runs up'],
+  SPARKLE: ['glitter storm', 'every string glitters at once'],
+  STARS: ['meteor shower', 'a star falls on every string'],
+  WAVES: ['bigger, faster, brighter waves', 'a bright wave surges up'],
+  STORM: ['a lightning strike now, forking', 'a thunderclap flashes the dress'],
+  JELLYFISH: ['every jellyfish kicks and glows', 'a new bloom rises from the hem'],
+  AURORA: ['brighter, faster curtains', 'colours shift and ripple up'],
+  FIREFLIES: ['all the fireflies flash together', 'a swarm rises from the hem'],
+  HEARTBEAT: ['racing heart', 'one big thump'],
+  RAIN: ['downpour', 'a splash at every hem'],
+  MOTION: ['hotter, taller flames', 'sparks shoot up from the hem'],
+  MUSIC: ['hotter, taller flames', 'sparks shoot up from the hem'],
+  LOWPOWER: ['the embers flare up', 'sparks at the base'],
+};
+function renderHint() {
+  const name = modeNames[current.mode - 1];
+  const h = FX_HINTS[name];
+  $('fxHint').textContent = h ? `Flare: ${h[0]}. Burst: ${h[1]}.` : 'Flare and Burst do nothing in this tool mode.';
+}
+
+// ---------- motion: phone sensor stream, live readings, tuning ----------
+// [key, label, step, min, max, group]; the dress enforces the same limits
+const TUNE_META = [
+  ['phDynGain', 'Movement sensitivity', 10, 50, 1500, 'Phone sensitivity'],
+  ['phGyroGain', 'Turning sensitivity', 0.05, 0, 3, 'Phone sensitivity'],
+  ['phSpinDps', 'Spin speed for a flare (°/s)', 10, 90, 1000, 'Phone sensitivity'],
+  ['phStompG', 'Jolt for a burst (g)', 0.1, 1.2, 8, 'Phone sensitivity'],
+  ['dynGain', 'Movement sensitivity', 10, 50, 1500, 'Dress sensor sensitivity'],
+  ['gyroGain', 'Turning sensitivity', 0.05, 0, 3, 'Dress sensor sensitivity'],
+  ['spinDps', 'Spin speed for a flare (°/s)', 10, 90, 1000, 'Dress sensor sensitivity'],
+  ['stompG', 'Jolt for a burst (g)', 0.1, 1.2, 8, 'Dress sensor sensitivity'],
+  ['attackMs', 'Rise time (ms)', 5, 5, 500, 'Timing (both)'],
+  ['releaseMs', 'Settle time (ms)', 50, 100, 5000, 'Timing (both)'],
+  ['spinHoldMs', 'Spin must last (ms)', 10, 0, 1000, 'Timing (both)'],
+  ['flareCoolMs', 'Gap between flares (ms)', 100, 200, 5000, 'Timing (both)'],
+  ['stompCoolMs', 'Gap between bursts (ms)', 50, 100, 3000, 'Timing (both)'],
+  ['lockoutMs', 'Gap between a flare and a burst (ms)', 50, 0, 3000, 'Timing (both)'],
+  ['leanFullG', 'Tilt for full lean (g)', 0.01, 0.15, 1, 'Lean (both)'],
+  ['leanDeadG', 'Tilt ignored as wobble (g)', 0.01, 0, 0.4, 'Lean (both)'],
+];
+const AXIS_META = [
+  ['phoneFwd', 'Phone axis facing forward'], ['phoneLeft', 'Phone axis facing your left'],
+  ['hwFwd', 'Dress sensor axis facing forward'], ['hwLeft', 'Dress sensor axis facing your left'],
+];
+const AXES = [[1, '+X'], [-1, '−X'], [2, '+Y'], [-2, '−Y'], [3, '+Z'], [-3, '−Z']];
+// firmware defaults: the panel shows these until the dress reports its values
+const TUNE_DEFAULTS = { dynGain: 450, gyroGain: 0.6, phDynGain: 300, phGyroGain: 0.4, spinDps: 300, phSpinDps: 250,
+  stompG: 2.6, phStompG: 2.2, attackMs: 30, releaseMs: 900, spinHoldMs: 150, flareCoolMs: 1200, stompCoolMs: 400, lockoutMs: 700, musPop: 10, musSpark: 90, musLift: 120,
+  leanFullG: 0.5, leanDeadG: 0.08, hwFwd: 1, hwLeft: 2, phoneFwd: 3, phoneLeft: 1 };
+let tuning = { ...TUNE_DEFAULTS };
+
+// One sensitivity knob per sensor. 5 = default; each step of 2.5 doubles (or
+// halves) how hard the fire reacts to movement and turning, and lowers (or
+// raises) the spin speed and jolt needed for a flare or burst.
+const SENS = {
+  ph: { gain: ['phDynGain', 'phGyroGain'], spin: 'phSpinDps', stomp: 'phStompG' },
+  hw: { gain: ['dynGain', 'gyroGain'], spin: 'spinDps', stomp: 'stompG' },
+};
+function knobFromTuning(src) {
+  const k = SENS[src].gain[0];
+  return Math.max(1, Math.min(10, Math.round((5 + 2.5 * Math.log2(tuning[k] / TUNE_DEFAULTS[k])) * 2) / 2));
+}
+function knobSettings(src, knob) {
+  const m = Math.pow(2, (knob - 5) / 2.5), set = {}, S = SENS[src];
+  S.gain.forEach(k => { set[k] = +(TUNE_DEFAULTS[k] * m).toFixed(k.includes('Gyro') ? 2 : 0); });
+  set[S.spin] = Math.round(Math.min(1000, Math.max(90, TUNE_DEFAULTS[S.spin] / Math.sqrt(m))));
+  set[S.stomp] = +Math.min(8, Math.max(1.2, 1 + (TUNE_DEFAULTS[S.stomp] - 1) / Math.sqrt(m))).toFixed(2);
+  return set;
+}
+function renderMusicKnob() {
+  if (!tuning.musPop || $('sens_mus').matches(':active')) return;
+  const k = Math.max(1, Math.min(10, Math.round((5 + 2.5 * Math.log2(tuning.musPop / 10)) * 2) / 2));
+  $('sens_mus').value = k; $('sv_mus').textContent = k;
+}
+function renderKnobs() {
+  for (const src of ['ph', 'hw']) {
+    const el = $(`sens_${src}`);
+    if (el.matches(':active')) continue;
+    el.value = knobFromTuning(src);
+    $(`sv_${src}`).textContent = el.value;
+  }
+}
+for (const src of ['ph', 'hw']) {
+  const el = $(`sens_${src}`);
+  el.addEventListener('input', () => { $(`sv_${src}`).textContent = el.value; });
+  el.addEventListener('change', async () => {
+    const set = knobSettings(src, Number(el.value));
+    for (const [k, v] of Object.entries(set)) {
+      tuning[k] = v;
+      await send(`tune ${k} ${v}`).catch(e => log(e.message));
+    }
+    log(`${src === 'ph' ? 'Phone' : 'Dress sensor'} sensitivity ${el.value}: burst at ${set[SENS[src].stomp]} g, flare at ${set[SENS[src].spin]}°/s`);
+    readTuning();
+  });
+}
+
+async function readTuning() {
+  try { tuning = { ...TUNE_DEFAULTS, ...JSON.parse(dec(await gatt(() => tuneChr.readValue()))) }; }
+  catch (e) { log(`Couldn't read the dress's tuning (${e.message}); showing defaults.`); }
+  renderTuning();
+}
+function sendTune(key, value) {
+  send(`tune ${key} ${value}`).then(readTuning).catch(e => log(e.message));
+}
+function renderTuning() {
+  renderKnobs();
+  renderMusicKnob();
+  const box = $('tune');
+  if (box.dataset.built) {
+    TUNE_META.forEach(([k]) => {
+      const el = $(`t_${k}`);
+      if (el && !el.matches(':active') && tuning[k] !== undefined) { el.value = tuning[k]; $(`v_${k}`).textContent = tuning[k]; }
+    });
+    AXIS_META.forEach(([k]) => { if ($(`t_${k}`) && tuning[k] !== undefined) $(`t_${k}`).value = tuning[k]; });
+    updateMarks();
+    return;
+  }
+  box.dataset.built = 1;
+  let group = '';
+  TUNE_META.forEach(([k, label, step, min, max, g]) => {
+    if (g !== group) { group = g; const h = document.createElement('h3'); h.textContent = g; box.appendChild(h); }
+    const l = document.createElement('label');
+    l.innerHTML = `<span>${label}</span><b id="v_${k}">${tuning[k] ?? '–'}</b>` +
+      `<input id="t_${k}" type="range" min="${min}" max="${max}" step="${step}" value="${tuning[k] ?? min}">`;
+    box.appendChild(l);
+    const input = l.querySelector('input');
+    input.addEventListener('input', () => { $(`v_${k}`).textContent = input.value; tuning[k] = Number(input.value); updateMarks(); });
+    input.addEventListener('change', () => sendTune(k, input.value));
+  });
+  const h = document.createElement('h3'); h.textContent = 'Which way is forward'; box.appendChild(h);
+  AXIS_META.forEach(([k, label]) => {
+    const l = document.createElement('label');
+    l.innerHTML = `<span>${label}</span><select id="t_${k}">${AXES.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select>`;
+    box.appendChild(l);
+    const sel = l.querySelector('select');
+    sel.value = tuning[k];
+    sel.addEventListener('change', () => sendTune(k, sel.value));
+  });
+  updateMarks();
+}
+let motionSource = 'phone';
+function updateMarks() {   // threshold markers on the live meters, for whichever sensor is live
+  const spin = motionSource === 'imu' ? tuning.spinDps : tuning.phSpinDps;
+  const stomp = motionSource === 'imu' ? tuning.stompG : tuning.phStompG;
+  if (spin) $('kSpin').style.left = `${Math.min(100, spin / 10)}%`;
+  if (stomp) $('kJolt').style.left = `${Math.min(100, stomp / 8 * 100)}%`;
+}
+
+let lastCounts = { nf: null, nb: null };
+function flash(id) { const el = $(id); el.classList.add('hit'); setTimeout(() => el.classList.remove('hit'), 60); }
+function onMotion(text) {
+  let m;
+  try { m = JSON.parse(text); }
+  catch { gatt(() => motionChr.readValue()).then(v => onMotion(dec(v))).catch(() => {}); return; }
+  $('motionLive').hidden = false;
+  $('motionSrc').textContent = m.src === 'imu' ? "the dress's sensor" : m.src === 'phone' ? 'this phone' : 'none';
+  setSource(m.src);
+  hist.dress.push({ t: performance.now(), jolt: m.a, spin: Math.abs(m.y), energy: m.e });
+  if (m.src !== motionSource && m.src !== 'none') { motionSource = m.src; updateMarks(); }
+  const set = (bar, val, pct, text) => { $(bar).style.width = `${Math.max(0, Math.min(100, pct))}%`; $(val).textContent = text; };
+  set('mEnergy', 'vEnergy', m.e / 2.55, Math.round(m.e));
+  set('mMove', 'vMove', m.d * 100, `${m.d.toFixed(2)} g`);
+  set('mSpin', 'vSpin', Math.abs(m.y) / 10, `${Math.round(Math.abs(m.y))}°/s`);
+  set('mJolt', 'vJolt', m.a / 8 * 100, `${m.a.toFixed(1)} g`);
+  if (lastCounts.nf !== null && m.nf !== lastCounts.nf) { flash('evFlare'); hist.events.push({ t: performance.now(), k: 'F' }); }
+  if (lastCounts.nb !== null && m.nb !== lastCounts.nb) { flash('evBurst'); hist.events.push({ t: performance.now(), k: 'B' }); }
+  lastCounts = { nf: m.nf, nb: m.nb };
+  drawLean(m.la, m.lm);
+}
+function drawLean(angle, amount) {   // top view: up = front, left = wearer's left
+  const c = $('leanDial'), x = c.getContext('2d'), r = c.width / 2;
+  x.clearRect(0, 0, c.width, c.height);
+  x.strokeStyle = '#3a2a22'; x.lineWidth = 4;
+  x.beginPath(); x.arc(r, r, r - 6, 0, Math.PI * 2); x.stroke();
+  x.fillStyle = '#b59a88'; x.font = '22px system-ui'; x.textAlign = 'center';
+  x.fillText('front', r, 26);
+  const a = angle * Math.PI / 180, len = (r - 14) * amount / 255;
+  const px = r - Math.sin(a) * len, py = r - Math.cos(a) * len;   // +angle = toward wearer's left
+  x.fillStyle = '#ff7a1a';
+  x.beginPath(); x.arc(px, py, 12, 0, Math.PI * 2); x.fill();
+}
+
+// Phone sensor -> dress, ~25 samples a second, as 6 x int16:
+// accel in milli-g (Chrome reports +9.8 m/s² upward at rest), gyro in 0.1 °/s
+let streaming = false, lastSent = 0, imuBusy = false, wakeLock = null;
+let peak = null;   // the hardest jolt seen since the last send, so short stomps aren't dropped
+const stats = { readings: 0, sent: 0, errors: 0, lastError: '', windowStart: 0, rate: 0 };
+function onDeviceMotion(e) {
+  if (!streaming) return;
+  const a = e.accelerationIncludingGravity, r = e.rotationRate || {};
+  if (!a || a.x === null) return;
+  stats.readings++;                 // counted even if the dress can't take them, to tell the problems apart
+  const total = Math.hypot(a.x, a.y, a.z) / 9.80665;
+  const jolt = Math.abs(total - 1);
+  hist.phone.push({ t: performance.now(), jolt: total, spin: Math.hypot(r.alpha || 0, r.beta || 0, r.gamma || 0) });
+  if (!peak || jolt > peak.jolt) peak = { jolt, ax: a.x, ay: a.y, az: a.z };
+  const now = performance.now();
+  if (!imuChr || imuBusy || now - lastSent < 40) return;
+  lastSent = now;
+  const clamp = v => Math.max(-32767, Math.min(32767, Math.round(v)));
+  const d = new DataView(new ArrayBuffer(12));
+  // accel in milli-g (Chrome reports +9.8 m/s² upward at rest): the window's hardest jolt
+  [peak.ax, peak.ay, peak.az].forEach((v, i) => d.setInt16(i * 2, clamp(v / 9.80665 * 1000), true));
+  peak = null;
+  // gyro in 0.1 °/s, latest reading. rotationRate: beta = about X, gamma = about Y, alpha = about Z
+  [r.beta, r.gamma, r.alpha].forEach((v, i) => d.setInt16(6 + i * 2, clamp((v || 0) * 10), true));
+  imuBusy = true;
+  gatt(() => imuChr.writeValueWithoutResponse(d.buffer))
+    .then(() => { stats.sent++; })
+    .catch(err => { stats.errors++; stats.lastError = err.message; })
+    .finally(() => { imuBusy = false; });
+}
+
+// readings/s, sent and errors, once a second while streaming; warn if the
+// phone isn't handing motion data to this page at all
+let statsTimer = null;
+function updateStats() {
+  const now = performance.now();
+  stats.rate = Math.round(stats.readings * 1000 / Math.max(1, now - stats.windowStart));
+  $('phoneStats').hidden = false;
+  $('phoneStats').textContent = `Phone sensor: ${stats.rate} readings/s · sent ${stats.sent}` +
+    (stats.errors ? ` · ${stats.errors} send errors (${stats.lastError})` : '');
+  if (!imuChr) {
+    showSensorWarning(stats.readings
+      ? "The phone's sensor works, but the dress connected without its motion channel. Android is remembering an older layout of the dress: open Android's Bluetooth settings, forget/unpair FireDress, then Connect again here and re-enter the PIN."
+      : "The dress connected without its motion channel. Forget/unpair FireDress in the phone's Bluetooth settings, then Connect again and re-enter the PIN.");
+  } else if (stats.readings === 0 && now - stats.windowStart > 2500) {
+    showSensorWarning(window.isSecureContext
+      ? "The phone isn't giving this page any motion readings. Check Chrome's site settings allow motion sensors for this page."
+      : "Chrome only gives motion sensors to pages opened over https. A copied file can't read them. Open the page from its https address (GitHub Pages) instead.");
+  }
+  stats.readings = 0; stats.windowStart = now;
+}
+function showSensorWarning(text) { $('sensorWarn').textContent = text; $('sensorWarn').hidden = false; }
+async function togglePhoneMotion() {
+  if (!streaming) {
+    if (typeof DeviceMotionEvent === 'undefined') { log('This browser has no motion sensor access.'); return; }
+    if (DeviceMotionEvent.requestPermission) {   // iPhone only; Android needs no prompt
+      try { if (await DeviceMotionEvent.requestPermission() !== 'granted') return; } catch { return; }
+    }
+    window.addEventListener('devicemotion', onDeviceMotion);
+    streaming = true;
+    Object.assign(stats, { readings: 0, sent: 0, errors: 0, lastError: '', windowStart: performance.now() });
+    $('sensorWarn').hidden = true;
+    statsTimer = setInterval(updateStats, 1000);
+    try { wakeLock = await navigator.wakeLock?.request('screen'); } catch { wakeLock = null; }
+    $('phoneMotionBtn').textContent = "Stop using this phone's motion";
+    $('phoneMotionBtn').classList.add('on');
+    log('Streaming phone motion. Hold still and upright for a second while it calibrates.');
+  } else {
+    streaming = false;
+    window.removeEventListener('devicemotion', onDeviceMotion);
+    clearInterval(statsTimer);
+    $('phoneStats').hidden = true;
+    try { await wakeLock?.release(); } catch {}
+    $('phoneMotionBtn').textContent = "Use this phone's motion";
+    $('phoneMotionBtn').classList.remove('on');
+  }
+}
+$('phoneMotionBtn').onclick = togglePhoneMotion;
+renderTuning();   // the panel is there even before the dress answers
+$('recalBtn').onclick = () => send('recal').then(() => log('Hold upright for a second…')).catch(e => log(e.message));
+$('tuneResetBtn').onclick = () => sendTune('reset', 0);
+
+// ---------- motion source badge ----------
+function setSource(src) {
+  const pill = $('srcPill');
+  pill.textContent = src === 'imu' ? 'Dress sensor' : src === 'phone' ? 'This phone' : 'No motion';
+  pill.className = `pill ${src === 'imu' ? 'imu' : src === 'phone' ? 'phone' : ''}`;
+}
+
+// ---------- graphs: last 12 s of jolt, spin and energy ----------
+const HIST_MS = 12000;
+const hist = { dress: [], phone: [], events: [] };
+let graphsOn = false;
+$('graphToggle').addEventListener('change', e => {
+  graphsOn = e.target.checked;
+  $('graphBox').hidden = !graphsOn;
+  if (graphsOn) requestAnimationFrame(drawGraphs);
+});
+function drawGraphs() {
+  if (!graphsOn) return;
+  const c = $('graphs'), dpr = window.devicePixelRatio || 1;
+  const w = c.clientWidth, h = c.clientHeight;
+  if (c.width !== Math.round(w * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+  const x = c.getContext('2d');
+  x.setTransform(dpr, 0, 0, dpr, 0, 0);
+  x.clearRect(0, 0, w, h);
+  const now = performance.now();
+  for (const k of ['dress', 'phone', 'events']) while (hist[k].length && now - hist[k][0].t > HIST_MS) hist[k].shift();
+  const src = motionSource === 'imu' ? 'imu' : 'phone';
+  const panels = [
+    { label: 'Jolt (g)', key: 'jolt', max: 6, level: src === 'imu' ? tuning.stompG : tuning.phStompG },
+    { label: 'Spin (°/s)', key: 'spin', max: 900, level: src === 'imu' ? tuning.spinDps : tuning.phSpinDps },
+    { label: 'Fire energy', key: 'energy', max: 255 },
+  ];
+  const ph = h / panels.length, tx = t => w - (now - t) / HIST_MS * w;
+  panels.forEach((p, i) => {
+    const top = i * ph + 16, bottom = (i + 1) * ph - 6, y = v => bottom - Math.min(1, v / p.max) * (bottom - top);
+    x.strokeStyle = '#3a2a22'; x.lineWidth = 1;
+    x.beginPath(); x.moveTo(0, bottom + 0.5); x.lineTo(w, bottom + 0.5); x.stroke();
+    x.fillStyle = '#b59a88'; x.font = '11px system-ui'; x.fillText(p.label, 6, top - 4);
+    if (p.level) {
+      x.setLineDash([4, 4]); x.strokeStyle = '#f3e6dc88';
+      x.beginPath(); x.moveTo(0, y(p.level)); x.lineTo(w, y(p.level)); x.stroke(); x.setLineDash([]);
+    }
+    const line = (pts, colour, width) => {
+      if (pts.length < 2) return;
+      x.strokeStyle = colour; x.lineWidth = width; x.beginPath();
+      pts.forEach((q, j) => (j ? x.lineTo : x.moveTo).call(x, tx(q.t), y(q[p.key])));
+      x.stroke();
+    };
+    if (p.key !== 'energy') line(hist.phone, '#8a6f60', 1);
+    line(hist.dress, '#ff7a1a', 2);
+  });
+  x.font = 'bold 12px system-ui'; x.fillStyle = '#ffb347'; x.strokeStyle = '#ffb34766';
+  hist.events.forEach(ev => {
+    const ex = tx(ev.t);
+    x.beginPath(); x.moveTo(ex, 0); x.lineTo(ex, h); x.stroke();
+    x.fillText(ev.k, ex + 3, 12);
+  });
+  requestAnimationFrame(drawGraphs);
+}
+
+// on a copied file, say up front that phone motion can't work
+if (!window.isSecureContext) {
+  showSensorWarning("This page was opened as a file, so Chrome won't give it the phone's motion sensors. " +
+    "Everything else works. For phone motion, open the page from its https address (GitHub Pages).");
+}
+
+// ---------- music: beat tracking on the phone's microphone ----------
+// Follows the song's pulse rather than individual drum hits, the way real
+// beat trackers do, so it copes with sparse kicks, half-time choruses and fills:
+//  1. Onset strength: rise in loudness across the whole spectrum each frame
+//     (log spectral flux), weighted toward the low end, binned into 20 ms steps.
+//  2. Tempo: every half second, autocorrelate the last 6 s of onset strength
+//     over 75-180 BPM, favouring tempos near 120, and pick the best period.
+//  3. Phase: slide a comb of that period over the onsets to find where the
+//     beats fall, then run a beat clock that keeps pulsing steadily.
+//  4. Pulses fire LEAD_MS before the predicted beat to cancel the delay to the dress.
+//  5. Loudness is placed between the quiet and loud levels of the last ~10 s,
+//     so verses burn low and choruses fill the dress, at any room volume.
+const GATE_DB = -60;            // below this (dBFS) nothing triggers
+const BIN_MS = 20;              // onset-strength resolution
+const HIST_BINS = 300;          // 6 s of onset strength
+const LEAD_MS = 50;             // send beats this early (phone -> dress delay)
+const music = { on: false, ctx: null, stream: null, an: null, timer: null, freq: null, time: null,
+  prevLog: null, odfBins: [], binStart: 0, binVal: 0, tempoAt: 0, period: 0, conf: 0, bpm: 0,
+  nextBeat: 0, lastSent: 0, beatStrengths: [], periods: [], locked: false, shortDb: -40, loud: [], loudAt: 0, level: 0,
+  levelSentAt: 0, lastOnsetPeak: 0, recentOdf: [] };
+
+function beatK() { return 3.0 - (Number($('sens_beat').value) - 1) * 0.2; }   // fallback threshold
+function sendAudio(kind, level, strength, accent) {
+  if (!audioChr) return;
+  const d = new Uint8Array([kind, level, strength, accent ? 1 : 0]);
+  gatt(() => audioChr.writeValueWithoutResponse(d)).catch(() => {});
+}
+const pct = (arr, q) => { const a = [...arr].sort((x, y) => x - y); return a[Math.min(a.length - 1, Math.floor(q * a.length))]; };
+
+// tempo + phase from the onset-strength history
+function updateTempo(now) {
+  const m = music, x = m.odfBins;
+  if (x.length < 150) return;                                   // need ~3 s
+  const n = x.length, mean = x.reduce((a, b) => a + b, 0) / n, d = x.map(v => v - mean);
+  const acf = L => { let s = 0; for (let i = L; i < n; i++) s += d[i] * d[i - L]; return s / (n - L); };
+  const a0 = acf(0) || 1e-9;
+  let best = 0, bestScore = -Infinity;
+  const minL = Math.round(60000 / 180 / BIN_MS), maxL = Math.round(60000 / 75 / BIN_MS);
+  const scores = [];
+  for (let L = minL; L <= maxL; L++) {
+    const bpm = 60000 / (L * BIN_MS);
+    const prior = Math.exp(-0.5 * Math.pow(Math.log2(bpm / 120) / 0.55, 2));   // favour ~120
+    const sc = (acf(L) + 0.5 * (2 * L < n ? acf(2 * L) : 0)) * prior;
+    scores[L] = sc;
+    if (sc > bestScore) { bestScore = sc; best = L; }
+  }
+  // sub-bin period by parabolic interpolation
+  let Lf = best;
+  if (scores[best - 1] !== undefined && scores[best + 1] !== undefined) {
+    const y0 = scores[best - 1], y1 = scores[best], y2 = scores[best + 1], den = y0 - 2 * y1 + y2;
+    if (den < 0) Lf = best + 0.5 * (y0 - y2) / den;
+  }
+  m.conf = Math.max(0, Math.min(1, acf(best) / a0));
+  const period = Lf * BIN_MS;
+  // locked = the tempo estimate holds steady across updates (sparse drums give
+  // low autocorrelation but a perfectly stable period)
+  m.periods.push(period); if (m.periods.length > 4) m.periods.shift();
+  const pmed = pct(m.periods, 0.5);
+  m.locked = m.periods.length >= 3 && m.periods.every(v => Math.abs(v - pmed) < pmed * 0.04);
+  m.period = m.period ? m.period * 0.7 + period * 0.3 : period;   // smooth tempo changes
+  m.bpm = Math.round(60000 / m.period);
+  // phase: comb over the history, newest beats weighted more
+  const P = m.period / BIN_MS;
+  let bestPh = 0, bestComb = -Infinity;
+  for (let ph = 0; ph < P; ph += 0.5) {
+    let c = 0, w = 1;
+    for (let pos = n - 1 - ph; pos >= 0; pos -= P, w *= 0.85) {
+      const i = Math.round(pos);
+      c += w * Math.max(x[i] || 0, x[i - 1] || 0, x[i + 1] || 0);
+    }
+    if (c > bestComb) { bestComb = c; bestPh = ph; }
+  }
+  // newest beat in the history: bin centre, less ~8 ms for the analysis window
+  const lastBeatTime = m.binStart - bestPh * BIN_MS - BIN_MS / 2 - 18;
+  let predicted = lastBeatTime;
+  while (predicted < now) predicted += m.period;
+  if (!m.nextBeat || Math.abs(predicted - m.nextBeat) > m.period * 0.45) m.nextBeat = predicted;   // re-sync
+  else m.nextBeat += (predicted - m.nextBeat) * 0.35;                                               // nudge
+}
+
+function analyseMusic() {
+  const m = music, now = performance.now();
+  m.an.getFloatFrequencyData(m.freq);
+  m.an.getFloatTimeDomainData(m.time);
+  let rms = 0;
+  for (let i = 0; i < m.time.length; i++) rms += m.time[i] * m.time[i];
+  const db = 20 * Math.log10(Math.sqrt(rms / m.time.length) + 1e-9);
+  const quiet = db < GATE_DB;
+
+  // 1. onset strength: log spectral flux up to ~8 kHz, low end weighted double
+  const hz = m.ctx.sampleRate / m.an.fftSize, top = Math.min(m.freq.length - 1, Math.round(8000 / hz));
+  const lg = new Float32Array(top + 1);
+  let flux = 0;
+  for (let i = 1; i <= top; i++) {
+    lg[i] = Math.log1p(100 * Math.pow(10, m.freq[i] / 20));
+    if (m.prevLog) { const r = lg[i] - m.prevLog[i]; if (r > 0) flux += r * (i * hz < 250 ? 2 : 1); }
+  }
+  m.prevLog = lg;
+  if (quiet) flux = 0;
+  // into 20 ms bins
+  if (!m.binStart) m.binStart = now;
+  while (now - m.binStart >= BIN_MS) {
+    m.odfBins.push(m.binVal); if (m.odfBins.length > HIST_BINS) m.odfBins.shift();
+    m.binVal = 0; m.binStart += BIN_MS;
+  }
+  m.binVal = Math.max(m.binVal, flux);
+  m.recentOdf.push({ t: now, v: flux }); while (m.recentOdf.length && now - m.recentOdf[0].t > 200) m.recentOdf.shift();
+
+  // 2-3. tempo and phase twice a second
+  if (now - m.tempoAt > 500) { m.tempoAt = now; updateTempo(now); }
+
+  // 5. loudness within the last ~10 s of this song
+  m.shortDb += (db - m.shortDb) * 0.15;
+  if (now - m.loudAt > 100) {
+    m.loudAt = now;
+    m.loud.push(m.shortDb); if (m.loud.length > 100) m.loud.shift();
+    const lo = pct(m.loud, 0.1), hi = pct(m.loud, 0.95);
+    m.level = quiet ? 0 : Math.max(0, Math.min(1, (m.shortDb - lo) / Math.max(6, hi - lo)));
+    if ($('musLevel').checked) sendAudio(0, Math.round(m.level * 255), 0, false);
+  }
+
+  // 4. beat clock (confident tempo) or plain onset peaks (no tempo yet)
+  const tracking = (m.locked || m.conf > 0.12) && m.period > 0;
+  let beat = false;
+  if (tracking && !quiet && now >= m.nextBeat - LEAD_MS) {
+    beat = now - m.lastSent > m.period * 0.6;            // never two pulses for one beat (re-syncs)
+    if (beat) m.lastSent = now;
+    m.nextBeat += m.period;
+    if (m.nextBeat < now) m.nextBeat = now + m.period;
+  } else if (!tracking && !quiet) {
+    const vals = m.odfBins.slice(-75), mean = vals.reduce((a, b) => a + b, 0) / Math.max(1, vals.length);
+    const sd = Math.sqrt(vals.reduce((a, b) => a + (b - mean) ** 2, 0) / Math.max(1, vals.length));
+    if (flux > mean + beatK() * sd && flux > 0.5 && now - m.lastOnsetPeak > 250) { beat = true; m.lastOnsetPeak = now; }
+  }
+  if (beat) {
+    // strength from the onsets around now, compared with recent beats
+    const s = Math.max(...m.recentOdf.map(o => o.v), 0.01);
+    m.beatStrengths.push(s); if (m.beatStrengths.length > 16) m.beatStrengths.shift();
+    const med = pct(m.beatStrengths, 0.5);
+    const rel = s / (med || 1);
+    const accent = m.beatStrengths.length >= 8 && rel > 1.6 && m.level > 0.6;
+    const strength = Math.round(Math.max(90, Math.min(255, 170 * rel)));
+    if ($('musPulse').checked || (accent && $('musAccent').checked))
+      sendAudio(1, $('musLevel').checked ? Math.round(m.level * 255) : 0,
+                $('musPulse').checked ? strength : 0, accent && $('musAccent').checked);
+    const lamp = $('beatLamp');
+    lamp.classList.add(accent ? 'big' : 'hit');
+    setTimeout(() => lamp.classList.remove('hit', 'big'), 70);
+  }
+
+  // readouts
+  const top95 = Math.max(1, pct(m.odfBins.length ? m.odfBins : [1], 0.98));
+  $('mKick').style.width = `${Math.min(100, flux / top95 * 100)}%`;
+  $('kKick').style.left = `${Math.min(100, m.conf * 100)}%`;
+  $('vKick').textContent = flux.toFixed(1);
+  $('mLevel').style.width = `${m.level * 100}%`;
+  $('vLevel').textContent = quiet ? 'quiet' : Math.round(m.level * 100);
+  $('bpm').textContent = tracking ? m.bpm : (m.bpm ? `${m.bpm}?` : '–');
+  $('roomDb').textContent = `${tracking ? 'locked to the beat' : 'finding the beat'} · confidence ${Math.round(m.conf * 100)}% · ${Math.round(db)} dBFS`;
+}
+function showMusicWarning(text) { $('musicWarn').textContent = text; $('musicWarn').hidden = false; }
+async function toggleMusic() {
+  const m = music;
+  if (!m.on) {
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      showMusicWarning("The microphone needs the page opened from its https address."); return;
+    }
+    if (!audioChr) showMusicWarning("This dress firmware has no music channel yet, or the phone remembers an older layout (forget FireDress in Bluetooth settings and reconnect). The meters will still work.");
+    try {
+      // raw sound: phone voice processing would squash the kick drum
+      m.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+    } catch (e) { showMusicWarning(`Microphone not available: ${e.message}`); return; }
+    m.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    m.an = m.ctx.createAnalyser();
+    m.an.fftSize = 1024;            // ~21 ms window at 48 kHz: less delay, still resolves 40-150 Hz
+    m.an.smoothingTimeConstant = 0;
+    m.ctx.createMediaStreamSource(m.stream).connect(m.an);
+    m.freq = new Float32Array(m.an.frequencyBinCount);
+    m.time = new Float32Array(m.an.fftSize);
+    Object.assign(m, { prevLog: null, odfBins: [], binStart: 0, binVal: 0, tempoAt: 0, period: 0, conf: 0, bpm: 0,
+                       nextBeat: 0, lastSent: 0, beatStrengths: [], periods: [], locked: false, loud: [], loudAt: 0, level: 0, recentOdf: [], lastOnsetPeak: 0 });
+    m.timer = setInterval(analyseMusic, 16);
+    m.on = true;
+    try { wakeLock = wakeLock || await navigator.wakeLock?.request('screen'); } catch {}
+    $('musicLive').hidden = false;
+    $('musicBtn').textContent = 'Stop listening';
+    $('musicBtn').classList.add('on');
+  } else {
+    clearInterval(m.timer);
+    m.stream?.getTracks().forEach(t => t.stop());
+    try { await m.ctx?.close(); } catch {}
+    m.on = false;
+    $('musicLive').hidden = true;
+    $('musicBtn').textContent = 'Listen to the music (phone mic)';
+    $('musicBtn').classList.remove('on');
+  }
+}
+$('musicBtn').onclick = toggleMusic;
+$('sens_beat').addEventListener('input', e => { $('sv_beat').textContent = e.target.value; });
+// one knob for how much the music does: brightness pop, beat sparks, loudness lift
+function musicSettings(k) {
+  const f = Math.pow(2, (k - 5) / 2.5);
+  return { musPop: Math.round(Math.min(40, 10 * f)), musSpark: Math.round(Math.min(255, 90 * f)),
+           musLift: Math.round(Math.min(255, 120 * f)) };
+}
+$('sens_mus').addEventListener('input', e => { $('sv_mus').textContent = e.target.value; });
+$('sens_mus').addEventListener('change', async e => {
+  for (const [k, v] of Object.entries(musicSettings(Number(e.target.value)))) {
+    tuning[k] = v;
+    await send(`tune ${k} ${v}`).catch(err => log(err.message));
+  }
+  readTuning();
+});
+
+// ---------- firmware update ----------
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(bytes) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+let otaWaiter = null, otaError = null;
+function onOtaMessage(msg) {
+  log(`Dress: ${msg}`);
+  if (msg.startsWith('err')) otaError = msg;
+  if (otaWaiter) { otaWaiter(msg); otaWaiter = null; }
+}
+function waitOta(ms) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => { otaWaiter = null; reject(new Error('no reply from dress')); }, ms);
+    otaWaiter = msg => { clearTimeout(timer); resolve(msg); };
+  });
+}
+
+$('otaBtn').onclick = async () => {
+  const file = $('fwFile').files[0];
+  if (!file) return;
+  const data = new Uint8Array(await file.arrayBuffer());
+  if (data[0] !== 0xE9) { log('That is not an ESP32 firmware image. Pick firmware.bin.'); return; }
+  const crc = crc32(data);
+  updating = true; otaError = null;
+  $('otaBtn').disabled = true;
+  try {
+    log(`Updating: ${(data.length / 1024).toFixed(0)} KB, CRC ${crc.toString(16)}`);
+    const ready = waitOta(10000);
+    await send(`ota begin ${data.length} ${crc.toString(16)}`);
+    const r = await ready;
+    if (r !== 'ready') throw new Error(r);
+    const start = performance.now();
+    for (let off = 0; off < data.length; off += CHUNK) {
+      if (otaError) throw new Error(otaError);
+      await gatt(() => otaChr.writeValueWithResponse(data.subarray(off, off + CHUNK)));
+      const done = Math.min(off + CHUNK, data.length);
+      const secs = (performance.now() - start) / 1000;
+      $('otaBar').style.width = `${(100 * done / data.length).toFixed(1)}%`;
+      $('otaText').textContent = `${(done / 1024).toFixed(0)} / ${(data.length / 1024).toFixed(0)} KB · ` +
+        `${(done / 1024 / secs).toFixed(1)} KB/s`;
+    }
+    const finished = waitOta(20000);
+    await send('ota end');
+    const f = await finished;
+    if (!f.startsWith('done')) throw new Error(f);
+    $('otaText').textContent = 'Done. The dress is rebooting into the new firmware; reconnect in a few seconds.';
+  } catch (e) {
+    log(`Update failed: ${e.message}`);
+    $('otaText').textContent = `Failed: ${e.message}`;
+    if (!otaError) send('ota abort').catch(() => {});
+    updating = false;
+  } finally {
+    $('otaBtn').disabled = !$('fwFile').files.length;
+  }
+};
+
+// Offline support when served over https (GitHub Pages): installable, works without internet
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  navigator.serviceWorker.register('sw.js').catch(e => log(`Offline cache unavailable: ${e.message}`));
+}
+
+if (!navigator.bluetooth) {
+  $('nobt').hidden = false;
+  $('connectBtn').disabled = true;
+}
+</script>
+</body>
+</html>
